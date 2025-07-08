@@ -9,9 +9,14 @@ export default {
   dark:           "#0c0c0c",
   danger:         "#B3261E",
 
-  // — New tokens for your welcome page —
-  background:     "#EEEFEA",  // 3-stop gradient bottom
-  logo:           "#A52A2A",  // Ares logo colour
-  createButton:   "#161923",  // "Create account" button bg
-  onBackground:   "#1C1B1F",  // text on default bg
+  // — Welcome page —
+  background:     "#EEEFEA",
+  logo:           "#A52A2A",
+  createButton:   "#161923",
+  onBackground:   "#1C1B1F",
+
+  // — NEW tokens for the login form —
+  formSurface:    "#F5F6F2",   // pale fill inside the inputs
+  formBorder:     "#B5B5B5",   // light grey border & placeholder
+  formBorderActive:"#161923",  // dark border when the field is focused
 };
