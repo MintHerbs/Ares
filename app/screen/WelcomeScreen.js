@@ -7,8 +7,8 @@ import {
   Text,
   TouchableOpacity,
   Platform,
+  SafeAreaView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import LogoAres      from "../assets/LogoAres.svg";
 import Button        from "../components/Button";
@@ -16,7 +16,7 @@ import SocialButton  from "../components/SocialButton";
 import GradientBackground from "../components/GradientBackground";
 import colors        from "../config/colors";
 
-function WelcomeScreen(props) {
+function WelcomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <GradientBackground>
@@ -49,7 +49,11 @@ function WelcomeScreen(props) {
 
           {/* Create account */}
           <View style={styles.createButtonContainer}>
-            <Button title="Create account" color="createButton" />
+            <Button
+              title="Create account"
+              color="createButton"
+              onPress={() => navigation.navigate("Register")}   // ← route name
+            />
           </View>
 
           {/* Login prompt */}
@@ -60,7 +64,9 @@ function WelcomeScreen(props) {
             ]}
           >
             <Text style={styles.loginText}>Have an account already? </Text>
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Login")}      // ← route name
+            >
               <Text style={styles.loginLink}>Login</Text>
             </TouchableOpacity>
           </View>
