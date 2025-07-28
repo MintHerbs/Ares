@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+
 import { Formik } from "formik";
 import * as Yup from "yup";
 
@@ -23,6 +24,9 @@ import Logo            from "../assets/logo.svg";
 import EmailIcon       from "../assets/form icons/Email.svg";
 import PasswordIcon    from "../assets/form icons/Password.svg";
 
+// Supabase client (configured in ../lib/supabase). This gives us auth methods.
+import { supabase }    from "../lib/supabase";
+
 // --- validation schema ---
 const validationSchema = Yup.object().shape({
   email:    Yup.string().required().email().label("Email"),
@@ -36,12 +40,30 @@ export default function LoginScreen() {
   const handleLogin = async (values) => {
     setError("");
     setLoading(true);
+
     try {
-      // ← replace with your real login call
-      await fakeLoginApi(values.email, values.password);
-      // on success navigate away...
-    } catch {
-      setError("Invalid email or password");
+      // Call Supabase Auth v2 method. This returns { data: { user, session }, error }.
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email.trim(),
+        password: values.password.trim(),
+      });
+
+      if (signInError) {
+        // Any auth failure (wrong password, unconfirmed email, etc.) ends up here.
+        setError(signInError.message);
+      } else {
+        const { user, session } = data;
+        console.log("Signed in user:", user);
+        console.log("Session:", session);
+        // At this point the user is authenticated.
+        // Replace the console.log with your navigation logic, for example:
+        // navigation.navigate("Home");
+        // or update some global auth state/context.
+      }
+    } catch (err) {
+      // Catch unexpected network or library errors that are not normal auth errors.
+      setError("Unexpected login error");
+      console.error("Login exception:", err);
     } finally {
       setLoading(false);
     }
@@ -132,33 +154,22 @@ export default function LoginScreen() {
   );
 }
 
-// dummy API for demo
-async function fakeLoginApi(email, pass) {
-  return new Promise((res, rej) => {
-    setTimeout(() => {
-      email === "you@here.com" && pass === "pass123"
-        ? res()
-        : rej();
-    }, 1500);
-  });
-}
-
 const styles = StyleSheet.create({
   header: {
     alignItems:   "center",
-    marginTop:    80,     // 🔄 replaced top:80 with marginTop
+    marginTop:    80,
     marginBottom: -10,
   },
   title: {
     fontSize:   28,
     fontWeight: "700",
     color:      colors.onBackground,
-    marginTop:  10,      // 🔄 replaced negative with positive spacing
+    marginTop:  10,
   },
   subtitle: {
     fontFamily:   "Inter, sans-serif",
     fontSize:     23,
-    fontWeight:   "650", 
+    fontWeight:   "650",
     color:        colors.onBackground,
     marginBottom: 30,
   },
