@@ -1,0 +1,14 @@
+Login
+User details - preferences, restrictions
+
+map
+    - Journey 
+    - Currency (farhaan)
+    - Menu Reader 
+    - UV Index (sally)
+
+Nav bar below in all screens except loginn and user details
+    - Home (map)
+    - News
+    - Chat bot
+    - User settings
