@@ -1,14 +1,14 @@
-Login
-User details - preferences, restrictions
+Login (Charles)
+User details - preferences, restrictions (Charles)
 
 map
-    - Journey 
+    - Journey (farhaan)
     - Currency (farhaan)
-    - Menu Reader 
+    - Menu Reader (tanoo)
     - UV Index (sally)
 
-Nav bar below in all screens except loginn and user details
-    - Home (map)
-    - News
-    - Chat bot
-    - User settings
+Nav bar below in all screens except login and user details
+    - Home (map) (Nooha)
+    - News (Tanoo)
+    - Chat bot (Sally)
+    - User settings (nooha)

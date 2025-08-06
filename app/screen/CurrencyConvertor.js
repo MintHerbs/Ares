@@ -11,7 +11,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 
-export default function App() {
+export default function CurrencyConvertor() {
   const [amount, setAmount] = useState("");
   const [converted, setConverted] = useState(null);
   const [loading, setLoading] = useState(false);
