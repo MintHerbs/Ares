@@ -3,8 +3,15 @@ import AiLandingPage from './app/screen/AiLandingPage';
 import VoiceChatScreen from './app/screen/VoiceChatScreen';
 import WelcomeScreen from './app/screen/WelcomeScreen';
 import CurrencyConvertor from './app/screen/CurrencyConvertor';
-
-
+import LoginScreen from './app/screen/LoginScreen';
+import AppNavigator from './app/navigation/PageNavigator'
+import { NavigationContainer } from '@react-navigation/native';
 export default function App() {
-  return <CurrencyConvertor />
+  return (
+    <NavigationContainer>
+       <AppNavigator />
+    </NavigationContainer>
+  );
+  //  <LoginScreen />
+  // return <CurrencyConvertor />
 }

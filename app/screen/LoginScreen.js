@@ -24,6 +24,11 @@ import Logo            from "../assets/logo.svg";
 import EmailIcon       from "../assets/form icons/Email.svg";
 import PasswordIcon    from "../assets/form icons/Password.svg";
 
+
+import { useNavigation } from "@react-navigation/native";
+import VoiceChatScreen from "./VoiceChatScreen.js";
+
+
 // Supabase client (configured in ../lib/supabase). This gives us auth methods.
 import { supabase }    from "../lib/supabase";
 
@@ -33,15 +38,43 @@ const validationSchema = Yup.object().shape({
   password: Yup.string().required().min(4).label("Password"),
 });
 
+
+
+
+
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
+  const navigation = useNavigation();
+
+
+  
+  const createAcc = async () => {
+    const { data, error } = await supabase.auth.signUp({
+          email: 'appcup2026@gmail.com', //change as needed
+          password: 'OLSPD!',  //parei
+        });
+        
+        if (error) {
+          console.log('Signup failed:', error.message);
+        } else {
+          console.log('Signup success:', data);
+        }
+  }
+
 
   const handleLogin = async (values) => {
     setError("");
     setLoading(true);
+      
+    //? Uncomment if u need to create another user account in supabase
+    // createAcc();
 
     try {
+      
+      
+      
+
       // Call Supabase Auth v2 method. This returns { data: { user, session }, error }.
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email.trim(),
@@ -59,6 +92,8 @@ export default function LoginScreen() {
         // Replace the console.log with your navigation logic, for example:
         // navigation.navigate("Home");
         // or update some global auth state/context.
+
+        navigation.replace("UserDetailsScreen"); 
       }
     } catch (err) {
       // Catch unexpected network or library errors that are not normal auth errors.
