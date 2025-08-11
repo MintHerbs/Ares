@@ -37,12 +37,15 @@ const validationSchema = Yup.object().shape({
   dateOfBirth: Yup.string().required().label("Date of Birth"),
 });
 
+
+import { useNavigation } from "@react-navigation/native";
+
 function RegisterScreen() {
   // These handle keyboard offset for different input fields
   const [offset, setOffset] = useState(0);
   // This state tracks when we're communicating with Supabase server
   const [loading, setLoading] = useState(false); // Loading state for Supabase operations
-
+  const navigation = useNavigation();
   /* ========================================================================
    * SUPABASE REGISTRATION HANDLER - This is the main function that handles
    * user registration by communicating with Supabase authentication service
@@ -114,20 +117,22 @@ function RegisterScreen() {
          * SUCCESSFUL SUPABASE REGISTRATION - User account was created
          * =============================================================== */
         // SUCCESS HANDLING: Registration successful
-        Alert.alert(
-          'Registration Successful!', 
-          'Please check your email to verify your account.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // This is where you'd typically navigate to login or email verification screen
-                //Add navigation logic here (e.g., navigate to login or email verification)
-                console.log('User registered successfully, redirecting...');
-              }
-            }
-          ]
-        );
+        // Alert.alert(
+        //   'Registration Successful!', 
+        //   'Please check your email to verify your account.',
+        //   [
+        //     {
+        //       text: 'OK',
+        //       onPress: () => {
+        //         // This is where you'd typically navigate to login or email verification screen
+        //         //Add navigation logic here (e.g., navigate to login or email verification)
+        //         console.log('User registered successfully, redirecting...');
+        //       }
+        //     }
+        //   ]
+        // );
+
+        navigation.replace("UserDetailsScreen"); 
       }
     } catch (err) {
       // Handle any network errors or other unexpected issues with Supabase
