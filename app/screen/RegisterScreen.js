@@ -132,7 +132,7 @@ function RegisterScreen() {
         //   ]
         // );
 
-        navigation.replace("UserDetailsScreen"); 
+        navigation.replace("Nationality"); 
       }
     } catch (err) {
       // Handle any network errors or other unexpected issues with Supabase

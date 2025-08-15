@@ -4,14 +4,16 @@ import VoiceChatScreen from './app/screen/VoiceChatScreen';
 import WelcomeScreen from './app/screen/WelcomeScreen';
 import CurrencyConvertor from './app/screen/CurrencyConvertor';
 import LoginScreen from './app/screen/LoginScreen';
-import AppNavigator from './app/navigation/PageNavigator'
+import AppNavigator from './app/navigation/PageNavigator';
+import NearbyPlaces from './app/screen/journey';
 import { NavigationContainer } from '@react-navigation/native';
+
 export default function App() {
   return (
     <NavigationContainer>
        <AppNavigator />
     </NavigationContainer>
   );
-  //  <LoginScreen />
-  // return <CurrencyConvertor />
+  // //  <LoginScreen />
+  // return <NearbyPlaces/>
 }

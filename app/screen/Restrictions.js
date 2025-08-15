@@ -80,10 +80,6 @@ async function setUserDetails(nationality, veg, skill_issue, colorblind, halal) 
     const { data, error } = await supabase
       .from('UserDetails') 
       .insert([{ id, nationality, veg, skill_issue, colorblind, halal }]);
-
-
-
-
     if (error) {
       console.error('Supabase error:', error);
     } else {

@@ -19,15 +19,10 @@ export default function AppNavigator() {
 return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Register" component={RegisterScreen} />
-      
       <Stack.Screen name="Login" component={LoginScreen} />
-      
-
-      <Stack.Screen name="UserDetailsScreen" component={Nationality} />
+      <Stack.Screen name="Nationality" component={Nationality} />
       <Stack.Screen name="Restrictions" component={Restrictions} />
       <Stack.Screen name="UserInfo" component={UserInfo} />
-
-
       <Stack.Screen name="VoiceChatScreen" component={VoiceChatScreen} />
     </Stack.Navigator>
   );
