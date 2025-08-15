@@ -1,32 +1,28 @@
-// app/screen/Map.js
-//attempt 2 -NB_MAP_homeScree- started fresh on this one 
-// app/screen/Map.js
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import MapView, { UrlTile, Marker } from 'react-native-maps';
+// App.js
+import React, { useState } from 'react';
+import { SafeAreaView, StyleSheet, View, Button, Alert } from 'react-native';
+import MapWeb from './app/screen/MapWeb';
 
-export default function Map() {
+export default function App() {
+  const [markers, setMarkers] = useState([]);
+
   return (
-    <View style={styles.container}>
-      <MapView
-        style={StyleSheet.absoluteFillObject}
-        mapType="none" // no Google base map; we’ll render OSM tiles instead
-        initialRegion={{
-          latitude: 37.78825,
-          longitude: -122.4324,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-      >
-        <UrlTile
-          urlTemplate="https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          shouldReplaceMapContent={true}
+    <SafeAreaView style={styles.root}>
+      <View style={styles.toolbar}>
+        <Button title="Show count" onPress={() => Alert.alert(`Markers: ${markers.length}`)} />
+      </View>
+      <View style={styles.mapArea}>
+        <MapWeb
+          initialCenter={{ lat: -20.1609, lng: 57.5012, zoom: 12 }}
+          onMarkersChange={setMarkers}
         />
-        <Marker coordinate={{ latitude: 37.78825, longitude: -122.4324 }} />
-      </MapView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({ container: { flex: 1 } });
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  toolbar: { padding: 8, backgroundColor: '#f5f5f5' },
+  mapArea: { flex: 1 },
+});
