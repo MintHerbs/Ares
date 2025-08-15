@@ -1,4 +1,4 @@
-// app/navigation/AppNavigator.js
+// app/navigation/AppNavigator.js 
 import React from "react";
 import {
   StyleSheet,
