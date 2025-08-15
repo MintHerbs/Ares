@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useCallback } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Linking, Platform, Alert } from 'react-native'; // NEW
 import { WebView } from 'react-native-webview';
 
 export default function MapWeb({
@@ -7,6 +7,29 @@ export default function MapWeb({
   onMarkersChange,
 }) {
   const webRef = useRef(null);
+
+  // NEW: helper to build a Google Maps multi-stop URL
+  const buildGoogleMapsUrl = useCallback((markers, mode = 'driving') => {
+    if (!markers || markers.length === 0) return null;
+
+    // Use the order of markers as given; last one is the final destination.
+    const pts = markers.map(m => `${m.lat},${m.lng}`);
+    const destination = pts[pts.length - 1];
+
+    // Google Maps supports many waypoints but mobile UI can be picky.
+    const MAX_WAYPOINTS = 8; // keep it conservative (destination is separate)
+    const waypoints = pts.slice(0, pts.length - 1).slice(0, MAX_WAYPOINTS);
+
+    const enc = encodeURIComponent;
+    const url =
+      `https://www.google.com/maps/dir/?api=1` +
+      `&origin=${enc('Current Location')}` +
+      `&destination=${enc(destination)}` +
+      (waypoints.length ? `&waypoints=${enc(waypoints.join('|'))}` : '') +
+      `&travelmode=${enc(mode)}`;
+
+    return url;
+  }, []);
 
   const html = useMemo(() => `<!DOCTYPE html>
 <html>
@@ -225,19 +248,9 @@ export default function MapWeb({
 
   /* ===== JOURNAL ===== */
 
-  /* NEW: robust storage shim (falls back to in-memory if localStorage not available) */
   const storage = (() => {
-    try {
-      const k='__probe__'; localStorage.setItem(k,'1'); localStorage.removeItem(k);
-      return localStorage;
-    } catch (e) {
-      const mem = {};
-      return {
-        getItem: (k) => Object.prototype.hasOwnProperty.call(mem,k) ? mem[k] : null,
-        setItem: (k,v) => { mem[k] = String(v); },
-        removeItem: (k) => { delete mem[k]; }
-      };
-    }
+    try { const k='__probe__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return localStorage; }
+    catch (e) { const mem={}; return { getItem:k=>mem[k]??null, setItem:(k,v)=>mem[k]=String(v), removeItem:k=>{delete mem[k];} }; }
   })();
 
   const STORAGE_INDEX = 'itinerary:index';
@@ -250,51 +263,29 @@ export default function MapWeb({
   const saveBtn   = document.getElementById('saveEntry');
   const listEl    = document.getElementById('entries');
 
-  /* NEW: ensure the date input always has a value (fallback for WebViews without date support) */
-  function todayStr(){
-    const d=new Date(); const pad=n=>String(n).padStart(2,'0');
-    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-  }
+  function todayStr(){ const d=new Date(),pad=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
   dateInput.value = dateInput.value || todayStr();
 
-  function getIndex(){
-    try { return JSON.parse(storage.getItem(STORAGE_INDEX) || '[]'); }
-    catch { return []; }
-  }
-  function setIndex(arr){
-    storage.setItem(STORAGE_INDEX, JSON.stringify(arr));
-  }
+  function getIndex(){ try { return JSON.parse(storage.getItem(STORAGE_INDEX) || '[]'); } catch { return []; } }
+  function setIndex(arr){ storage.setItem(STORAGE_INDEX, JSON.stringify(arr)); }
   function keyFor(dateStr){ return STORAGE_PREFIX + dateStr; }
-
-  function loadEntry(dateStr){
-    try {
-      const raw = storage.getItem(keyFor(dateStr));
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch { return null; }
-  }
+  function loadEntry(dateStr){ try { const raw = storage.getItem(keyFor(dateStr)); return raw ? JSON.parse(raw) : null; } catch { return null; } }
   function saveEntry(dateStr, markers){
     storage.setItem(keyFor(dateStr), JSON.stringify(markers));
-    const idx = new Set(getIndex());
-    idx.add(dateStr);
-    setIndex(Array.from(idx).sort());
+    const idx = new Set(getIndex()); idx.add(dateStr); setIndex(Array.from(idx).sort());
   }
-  function deleteEntry(dateStr){
-    storage.removeItem(keyFor(dateStr));
-    const next = getIndex().filter(d => d !== dateStr);
-    setIndex(next);
-  }
+  function deleteEntry(dateStr){ storage.removeItem(keyFor(dateStr)); setIndex(getIndex().filter(d => d !== dateStr)); }
 
   function renderEntries(){
     const dates = getIndex();
     if (dates.length === 0){ listEl.innerHTML = '<div class="nores">No saved days</div>'; return; }
     listEl.innerHTML = dates.map(date => {
-      const m = loadEntry(date) || [];
-      const count = Array.isArray(m) ? m.length : 0;
+      const m = loadEntry(date) || []; const count = Array.isArray(m) ? m.length : 0;
       return '<div class="entry" data-date="'+date+'">'
           +   '<div><strong>'+date+'</strong> <span class="meta">('+count+' markers)</span></div>'
           +   '<div class="actions">'
           +     '<button data-action="load">Load</button>'
+          +     '<button data-action="start">Start</button>' /* NEW: start route */
           +     '<button data-action="delete">Delete</button>'
           +   '</div>'
           + '</div>';
@@ -305,12 +296,11 @@ export default function MapWeb({
   closeBtn.addEventListener('click', () => journal.classList.remove('open'));
 
   saveBtn.addEventListener('click', () => {
-    const ds = (dateInput.value || '').trim() || todayStr(); /* NEW: fallback */
+    const ds = (dateInput.value || '').trim() || todayStr();
     const markers = serializeMarkers();
     saveEntry(ds, markers);
     renderEntries();
-    toggleBtn.textContent = '📓 Saved!';
-    setTimeout(() => toggleBtn.textContent = '📓 Journal', 800);
+    toggleBtn.textContent = '📓 Saved!'; setTimeout(() => toggleBtn.textContent = '📓 Journal', 800);
   });
 
   listEl.addEventListener('click', (e) => {
@@ -319,18 +309,20 @@ export default function MapWeb({
     const action = e.target.getAttribute('data-action');
     if (action === 'load'){
       const markers = loadEntry(dateStr) || [];
-      clearMarkers();
-      markers.forEach(p => addMarker(p.lat, p.lng, p.type || 'pin'));
-      fitMarkers();
+      clearMarkers(); markers.forEach(p => addMarker(p.lat, p.lng, p.type || 'pin')); fitMarkers();
+    } else if (action === 'start'){ /* NEW: ask RN to start directions */
+      const markers = loadEntry(dateStr) || [];
+      if (markers.length === 0) { alert('No markers saved for this day'); return; }
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type:'startDirections', data:{ date:dateStr, markers } }));
+      }
     } else if (action === 'delete'){
-      deleteEntry(dateStr);
-      renderEntries();
+      deleteEntry(dateStr); renderEntries();
     }
   });
 
   renderEntries();
 
-  /* RN bridge */
   function handleRnMessage(msg){
     try{
       const { type, data } = JSON.parse(msg);
@@ -348,12 +340,30 @@ export default function MapWeb({
 </body>
 </html>`, [initialCenter]);
 
+  // React side: handle both marker updates and "startDirections"
   const onMessage = useCallback((event) => {
     try {
       const payload = JSON.parse(event.nativeEvent.data);
-      if (payload?.type === 'markers' && onMarkersChange) onMarkersChange(payload.data || []);
+
+      if (payload?.type === 'markers' && onMarkersChange) {
+        onMarkersChange(payload.data || []);
+        return;
+      }
+
+      if (payload?.type === 'startDirections') { // NEW
+        const markers = (payload.data && payload.data.markers) || [];
+        const url = buildGoogleMapsUrl(markers, 'driving');
+        if (!url) {
+          Alert.alert('Itinerary is empty', 'Add at least one stop.');
+          return;
+        }
+        Linking.openURL(url).catch(() =>
+          Alert.alert('Could not open Google Maps', url)
+        );
+        return;
+      }
     } catch {}
-  }, [onMarkersChange]);
+  }, [onMarkersChange, buildGoogleMapsUrl]);
 
   const send = useCallback((obj) => {
     if (!webRef.current) return;
@@ -367,7 +377,7 @@ export default function MapWeb({
       source={{ html }}
       onMessage={onMessage}
       javaScriptEnabled
-      domStorageEnabled={true}      // NEW: ensures localStorage works on Android
+      domStorageEnabled={true}
       geolocationEnabled
       allowsInlineMediaPlayback
       style={styles.fill}
