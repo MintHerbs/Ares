@@ -27,7 +27,7 @@ const Restrictions = () => {
         dietary == "halal" ? isHalal = true : isHalal = false;
         setUserDetails(nationality, isVeg, isSkillIssuesChecked, isColorBlindChecked, isHalal);
 
-        navigation.replace("UserInfo"); 
+        navigation.replace("MapHomeScreen"); 
     }
   return (
     <Screen style={styles.screen} >
@@ -84,6 +84,7 @@ async function setUserDetails(nationality, veg, skill_issue, colorblind, halal) 
       console.error('Supabase error:', error);
     } else {
       console.log('Inserted successfully:', data);
+      // navigation.replace("")
     }
   } catch (e) {
     console.error('Unexpected error:', e);

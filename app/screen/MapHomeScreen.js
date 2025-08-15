@@ -3,14 +3,18 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform, StatusBar } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import MapWeb from './MapWeb';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Screen from "../components/Screen";
 
 const HEADER_H = 56;
 
 export default function MapHomeScreen() {
-  const tabH = useBottomTabBarHeight();
+    // const { bottom } = useSafeAreaInsets();
+    const tabH = useBottomTabBarHeight();
 
   return (
-    <View
+    
+          <View
       style={[
         styles.screen,
         { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 },
@@ -26,6 +30,8 @@ export default function MapHomeScreen() {
         <MapWeb />
       </View>
     </View>
+      
+    
   );
 }
 

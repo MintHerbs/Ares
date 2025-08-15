@@ -13,15 +13,16 @@ import { useNavigation } from "@react-navigation/native";
 const Nationality = () => {
   const [restriction, setRestriction] = useState('');
   const [preference, setPreference] = useState('');
-    const navigation = useNavigation();
-const [countryCode, setCountryCode] = useState('US'); // default selection
+  const navigation = useNavigation();
+  const [countryCode, setCountryCode] = useState('US'); // default selection
   const [country, setCountry] = useState(null);
-    function navigate() {
-        navigation.navigate('Restrictions', {
-          nationality: countryCode,
-          dietary: preference
-        });
-    }
+
+  function navigate() {
+    navigation.navigate('Restrictions', {
+      nationality: countryCode,
+      dietary: preference
+    });
+  }
 
     const onSelect = (selectedCountry) => {
     setCountryCode(selectedCountry.cca2);
