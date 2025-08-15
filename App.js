@@ -8,11 +8,12 @@ import PageNavigator from './app/navigation/PageNavigator';
 import NearbyPlaces from './app/screen/journey';
 import { NavigationContainer } from '@react-navigation/native';
 import MapHomeScreen from './app/screen/MapHomeScreen';
+import AppNavigator from './app/navigation/AppNavigator';
 
 export default function App() {
   return (
     <NavigationContainer>
-       <PageNavigator />
+       <AppNavigator />
     </NavigationContainer>
   );
   // //  <LoginScreen />
