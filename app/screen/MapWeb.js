@@ -17,7 +17,6 @@ export default function MapWeb({
   html, body, #map { height: 100%; margin: 0; padding: 0; }
   .ui { position: absolute; z-index: 1000; }
 
-  /* search (left) + reserved right stack */
   .search { top: 10px; left: 10px; right: 160px; }
   .search form { display: flex; gap: 8px; }
   .search input {
@@ -37,7 +36,6 @@ export default function MapWeb({
   .item:active { background: #f3f3f3; }
   .nores { padding: 10px 12px; color: #777; }
 
-  /* right stack (Fit/Clear + marker type) */
   .rightStack { top: 70px; right: 10px; display: flex; flex-direction: column; gap: 8px; width: 140px; }
   .controls { display: flex; gap: 8px; }
   .controls button {
@@ -50,7 +48,6 @@ export default function MapWeb({
     background: #fff; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0,0,0,.15);
   }
 
-  /* JOURNAL: collapsible left panel */
   .journal-toggle {
     top: 70px; left: 10px; padding: 8px 10px; background: #fff; border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,.2); font-size: 14px;
@@ -81,7 +78,6 @@ export default function MapWeb({
   .journal .entry .actions { display: flex; gap: 6px; margin-top: 6px; }
   .pill { background: #eef3ff; color: #334; padding: 2px 6px; border-radius: 999px; font-size: 11px; }
 
-  /* emoji markers */
   .emoji-marker {
     display: grid; place-items: center;
     width: 40px; height: 40px; border-radius: 20px;
@@ -94,7 +90,6 @@ export default function MapWeb({
 <body>
 <div id="map"></div>
 
-<!-- search -->
 <div class="ui search">
   <form id="searchForm">
     <input id="searchInput" placeholder="Search a place (exact name works best)"/>
@@ -103,7 +98,6 @@ export default function MapWeb({
   <div id="searchResults" class="results"></div>
 </div>
 
-<!-- right side controls -->
 <div class="ui rightStack">
   <div class="controls">
     <button id="fitBtn">Fit</button>
@@ -121,7 +115,6 @@ export default function MapWeb({
   </div>
 </div>
 
-<!-- JOURNAL: toggle + panel -->
 <div class="ui journal-toggle" id="journalToggle">📓 Journal</div>
 <div class="ui journal" id="journal">
   <header>
@@ -148,7 +141,6 @@ export default function MapWeb({
   const center = [${initialCenter.lat}, ${initialCenter.lng}];
   const zoom = ${initialCenter.zoom ?? 12};
 
-  // map + zoom control bottom-right
   const map = L.map('map', { zoomControl: false }).setView(center, zoom);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -195,7 +187,6 @@ export default function MapWeb({
   let currentType = picker.value;
   picker.addEventListener('change', e => currentType = e.target.value);
 
-  // add by tapping
   map.on('click', e => addMarker(e.latlng.lat, e.latlng.lng, currentType));
   document.getElementById('fitBtn').addEventListener('click', fitMarkers);
   document.getElementById('clearBtn').addEventListener('click', clearMarkers);
@@ -232,9 +223,25 @@ export default function MapWeb({
     results.innerHTML = '';
   });
 
-  /* ===== JOURNAL (localStorage) ===== */
-  const STORAGE_INDEX = 'itinerary:index'; // JSON array of date strings
-  const STORAGE_PREFIX = 'itinerary:';     // itinerary:YYYY-MM-DD => JSON markers
+  /* ===== JOURNAL ===== */
+
+  /* NEW: robust storage shim (falls back to in-memory if localStorage not available) */
+  const storage = (() => {
+    try {
+      const k='__probe__'; localStorage.setItem(k,'1'); localStorage.removeItem(k);
+      return localStorage;
+    } catch (e) {
+      const mem = {};
+      return {
+        getItem: (k) => Object.prototype.hasOwnProperty.call(mem,k) ? mem[k] : null,
+        setItem: (k,v) => { mem[k] = String(v); },
+        removeItem: (k) => { delete mem[k]; }
+      };
+    }
+  })();
+
+  const STORAGE_INDEX = 'itinerary:index';
+  const STORAGE_PREFIX = 'itinerary:';
 
   const journal = document.getElementById('journal');
   const toggleBtn = document.getElementById('journalToggle');
@@ -243,33 +250,37 @@ export default function MapWeb({
   const saveBtn   = document.getElementById('saveEntry');
   const listEl    = document.getElementById('entries');
 
-  // default date = today
-  dateInput.valueAsDate = new Date();
+  /* NEW: ensure the date input always has a value (fallback for WebViews without date support) */
+  function todayStr(){
+    const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  }
+  dateInput.value = dateInput.value || todayStr();
 
   function getIndex(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_INDEX) || '[]'); }
+    try { return JSON.parse(storage.getItem(STORAGE_INDEX) || '[]'); }
     catch { return []; }
   }
   function setIndex(arr){
-    localStorage.setItem(STORAGE_INDEX, JSON.stringify(arr));
+    storage.setItem(STORAGE_INDEX, JSON.stringify(arr));
   }
   function keyFor(dateStr){ return STORAGE_PREFIX + dateStr; }
 
   function loadEntry(dateStr){
     try {
-      const raw = localStorage.getItem(keyFor(dateStr));
+      const raw = storage.getItem(keyFor(dateStr));
       if (!raw) return null;
       return JSON.parse(raw);
     } catch { return null; }
   }
   function saveEntry(dateStr, markers){
-    localStorage.setItem(keyFor(dateStr), JSON.stringify(markers));
+    storage.setItem(keyFor(dateStr), JSON.stringify(markers));
     const idx = new Set(getIndex());
     idx.add(dateStr);
-    setIndex(Array.from(idx).sort()); // keep sorted ascending; tweak if you want desc
+    setIndex(Array.from(idx).sort());
   }
   function deleteEntry(dateStr){
-    localStorage.removeItem(keyFor(dateStr));
+    storage.removeItem(keyFor(dateStr));
     const next = getIndex().filter(d => d !== dateStr);
     setIndex(next);
   }
@@ -281,32 +292,27 @@ export default function MapWeb({
       const m = loadEntry(date) || [];
       const count = Array.isArray(m) ? m.length : 0;
       return '<div class="entry" data-date="'+date+'">'
-          + '<div><strong>'+date+'</strong> <span class="meta">('+count+' markers)</span></div>'
-          + '<div class="actions">'
-          + '  <button data-action="load">Load</button>'
-          + '  <button data-action="delete">Delete</button>'
-          + '</div>'
+          +   '<div><strong>'+date+'</strong> <span class="meta">('+count+' markers)</span></div>'
+          +   '<div class="actions">'
+          +     '<button data-action="load">Load</button>'
+          +     '<button data-action="delete">Delete</button>'
+          +   '</div>'
           + '</div>';
     }).join('');
   }
 
-  // open/close
   toggleBtn.addEventListener('click', () => journal.classList.add('open'));
   closeBtn.addEventListener('click', () => journal.classList.remove('open'));
 
-  // save current markers to selected date
   saveBtn.addEventListener('click', () => {
-    const ds = (dateInput.value || '').trim();
-    if (!ds){ alert('Pick a date first'); return; }
+    const ds = (dateInput.value || '').trim() || todayStr(); /* NEW: fallback */
     const markers = serializeMarkers();
     saveEntry(ds, markers);
     renderEntries();
-    // optional feedback
     toggleBtn.textContent = '📓 Saved!';
     setTimeout(() => toggleBtn.textContent = '📓 Journal', 800);
   });
 
-  // list item actions
   listEl.addEventListener('click', (e) => {
     const entry = e.target.closest('.entry'); if (!entry) return;
     const dateStr = entry.dataset.date;
@@ -322,10 +328,9 @@ export default function MapWeb({
     }
   });
 
-  // initial render
   renderEntries();
 
-  // RN bridge (still supported)
+  /* RN bridge */
   function handleRnMessage(msg){
     try{
       const { type, data } = JSON.parse(msg);
@@ -362,6 +367,7 @@ export default function MapWeb({
       source={{ html }}
       onMessage={onMessage}
       javaScriptEnabled
+      domStorageEnabled={true}      // NEW: ensures localStorage works on Android
       geolocationEnabled
       allowsInlineMediaPlayback
       style={styles.fill}
