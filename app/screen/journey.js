@@ -14,7 +14,7 @@ import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 
 const GEOAPIFY_API_KEY = "0aac63c6c95743b387bed05ed1f9a538";
-const OPENAI_API_KEY ="sk-...CukA";
+const OPENAI_API_KEY = "sk-...CukA";
 
 export default function NearbyPlaces() {
   const [places, setPlaces] = useState([]);
@@ -29,49 +29,43 @@ export default function NearbyPlaces() {
     fetchLocationAndPlaces();
   }, [category]);
 
-  
   const getPlaceDescription = async (placeName) => {
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are a travel guide giving concise tourist descriptions." },
-          { role: "user", content: `Write a short, 2-sentence tourist description of "${placeName}".` }
-        ],
-        max_tokens: 60,
-      }),
-    });
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are a travel guide giving concise tourist descriptions." },
+            { role: "user", content: `Write a short, 2-sentence tourist description of "${placeName}".` },
+          ],
+          max_tokens: 60,
+        }),
+      });
 
-    const data = await response.json();
-    console.log("GPT Response:", JSON.stringify(data, null, 2)); // 🔍 debug
+      const data = await response.json();
+      if (data.error) {
+        console.error("OpenAI API error:", data.error.message);
+        return "Description unavailable.";
+      }
 
-    if (data.error) {
-      console.error("OpenAI API error:", data.error.message);
+      return data.choices?.[0]?.message?.content?.trim() || "Description unavailable.";
+    } catch (error) {
+      console.error("Fetch error:", error);
       return "Description unavailable.";
     }
-
-    return data.choices?.[0]?.message?.content?.trim() || "Description unavailable.";
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return "Description unavailable.";
-  }
-};
+  };
 
   const fetchLocationAndPlaces = async () => {
     setLoading(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Location permission is required to fetch nearby places."
-        );
+        Alert.alert("Permission Denied", "Location permission is required to fetch nearby places.");
         setLoading(false);
         return;
       }
@@ -79,7 +73,6 @@ export default function NearbyPlaces() {
       let location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
 
-      
       const geoUrl = `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_API_KEY}`;
       const geoResponse = await fetch(geoUrl);
       const geoData = await geoResponse.json();
@@ -95,18 +88,15 @@ export default function NearbyPlaces() {
         setLocationName("your location");
       }
 
-      
       const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${longitude},${latitude},${radius}&bias=proximity:${longitude},${latitude}&limit=2&apiKey=${GEOAPIFY_API_KEY}`;
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.features && data.features.length > 0) {
         let filteredPlaces = data.features.filter(
-          (place) =>
-            place.properties.name && place.properties.name.trim() !== ""
+          (place) => place.properties.name && place.properties.name.trim() !== ""
         );
 
-        
         if (["tourism", "entertainment"].includes(category)) {
           filteredPlaces = await Promise.all(
             filteredPlaces.map(async (place) => {
@@ -133,26 +123,20 @@ export default function NearbyPlaces() {
 
   const formatDistance = (meters) => {
     if (!meters) return "Unknown distance";
-    return meters >= 1000
-      ? `${(meters / 1000).toFixed(1)} km away`
-      : `${meters} m away`;
+    return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km away` : `${meters} m away`;
   };
 
   const openMaps = (lat, lon) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
-    Linking.openURL(url).catch(() =>
-      Alert.alert("Error", "Unable to open maps.")
-    );
+    Linking.openURL(url).catch(() => Alert.alert("Error", "Unable to open maps."));
   };
 
   const isOpenNow = (opening_hours) => {
     if (!opening_hours) return null;
-
     try {
       const now = new Date();
       const day = now.toLocaleString("en-US", { weekday: "short" });
       const timeMinutes = now.getHours() * 60 + now.getMinutes();
-
       const segments = opening_hours.split(";").map((seg) => seg.trim());
 
       for (const segment of segments) {
@@ -209,29 +193,20 @@ export default function NearbyPlaces() {
         <View style={styles.bubble}>
           <Text style={styles.bubbleText}>
             {props.name} is located at{" "}
-            {props.address_line2 && props.address_line2.trim() !== ""
-              ? props.address_line2
-              : "Address not available"}
-            .
+            {props.address_line2 && props.address_line2.trim() !== "" ? props.address_line2 : "Address not available"}.
           </Text>
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardContent}>
             {props.thumbnail && (
-              <Image
-                source={{ uri: props.thumbnail }}
-                style={styles.thumbnail}
-                resizeMode="cover"
-              />
+              <Image source={{ uri: props.thumbnail }} style={styles.thumbnail} resizeMode="cover" />
             )}
 
             <Text style={styles.cardTitle}>{props.name}</Text>
 
             {props.gptDescription && (
-              <Text style={{ fontSize: 14, color: "#555", marginBottom: 8 }}>
-                {props.gptDescription}
-              </Text>
+              <Text style={{ fontSize: 14, color: "#555", marginBottom: 8 }}>{props.gptDescription}</Text>
             )}
 
             <Text style={styles.distance}>{formatDistance(props.distance)}</Text>
@@ -239,9 +214,7 @@ export default function NearbyPlaces() {
             {props.opening_hours && (
               <>
                 <TouchableOpacity
-                  onPress={() =>
-                    setOpenHoursExpandedId(isExpanded ? null : item.id)
-                  }
+                  onPress={() => setOpenHoursExpandedId(isExpanded ? null : item.id)}
                   style={styles.openNowRow}
                   activeOpacity={0.7}
                 >
@@ -250,41 +223,25 @@ export default function NearbyPlaces() {
                       styles.statusDot,
                       {
                         backgroundColor:
-                          isOpen === true
-                            ? "#4CAF50"
-                            : isOpen === false
-                            ? "#B71C1C"
-                            : "#999",
+                          isOpen === true ? "#4CAF50" : isOpen === false ? "#B71C1C" : "#999",
                       },
                     ]}
                   />
                   <Text style={styles.openNowText}>
-                    {isOpen === true
-                      ? "Open Now"
-                      : isOpen === false
-                      ? "Closed Now"
-                      : "Hours Available"}
+                    {isOpen === true ? "Open Now" : isOpen === false ? "Closed Now" : "Hours Available"}
                   </Text>
-                  <Text style={styles.expandToggle}>
-                    {isExpanded ? "▲" : "▼"}
-                  </Text>
+                  <Text style={styles.expandToggle}>{isExpanded ? "▲" : "▼"}</Text>
                 </TouchableOpacity>
                 {isExpanded && (
                   <View style={styles.openingHoursBox}>
-                    <Text style={styles.openingHoursText}>
-                      {props.opening_hours}
-                    </Text>
+                    <Text style={styles.openingHoursText}>{props.opening_hours}</Text>
                   </View>
                 )}
               </>
             )}
 
             {props.website && (
-              <TouchableOpacity
-                onPress={() => Linking.openURL(props.website)}
-                style={styles.linkButton}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity onPress={() => Linking.openURL(props.website)} style={styles.linkButton} activeOpacity={0.7}>
                 <Text style={styles.linkText}>Website</Text>
               </TouchableOpacity>
             )}
@@ -300,14 +257,19 @@ export default function NearbyPlaces() {
             )}
 
             {lat && lon && (
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => openMaps(lat, lon)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.buttonText}>Get Directions</Text>
+              <TouchableOpacity style={styles.button} onPress={() => openMaps(lat, lon)} activeOpacity={0.8}>
+                <Text style={styles.buttonText}>Show on map</Text>
               </TouchableOpacity>
             )}
+
+            {/* New Add to Itinerary button */}
+            <TouchableOpacity
+              style={styles.itineraryButton}
+              onPress={() => Alert.alert("Added!", `${props.name} added to itinerary.`)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.itineraryButtonText}>Add to Itinerary</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -317,16 +279,10 @@ export default function NearbyPlaces() {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>THE JOURNEY</Text>
-      <Text style={styles.locationText}>
-        You are currently at {locationName || "your location"}
-      </Text>
+      <Text style={styles.locationText}>You are currently at {locationName || "your location"}</Text>
       <Text style={styles.subHeader}>Nearby places near you are:</Text>
 
-      <Picker
-        selectedValue={category}
-        style={styles.picker}
-        onValueChange={(itemValue) => setCategory(itemValue)}
-      >
+      <Picker selectedValue={category} style={styles.picker} onValueChange={(itemValue) => setCategory(itemValue)}>
         <Picker.Item label="Supermarket" value="commercial.supermarket" />
         <Picker.Item label="Restaurant" value="catering.restaurant" />
         <Picker.Item label="Fast Foods" value="catering.fast_food" />
@@ -342,17 +298,11 @@ export default function NearbyPlaces() {
       </Picker>
 
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#b61d1d"
-          style={styles.loadingIndicator}
-        />
+        <ActivityIndicator size="large" color="#b61d1d" style={styles.loadingIndicator} />
       ) : places.length > 0 ? (
         <FlatList
           data={places}
-          keyExtractor={(item, index) =>
-            item.id || `${item.properties.lat}-${item.properties.lon}-${index}`
-          }
+          keyExtractor={(item, index) => item.id || `${item.properties.lat}-${item.properties.lon}-${index}`}
           renderItem={renderPlace}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 30 }}
@@ -520,8 +470,26 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
+    marginBottom: 8,
   },
   buttonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  itineraryButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#4a7c59", // greenish
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 12,
+    shadowColor: "#003300",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+  },
+  itineraryButtonText: {
     color: "#fff",
     fontSize: 15,
     fontWeight: "700",
