@@ -60,26 +60,16 @@ function Tabs(){
   return (
     <SafeAreaView style={styles.screen}>
       <Tab.Navigator
-        initialRouteName="Home"  // ← NEW (optional, keeps Home first anyway)
+        initialRouteName="Search"  // ← NEW (optional, keeps Home first anyway)
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
+          detachInactiveScreens: false,  // ← keep views attached
+          lazy: false,                   // ← mount all tabs once          
           tabBarButton: (props) => <TouchableOpacity {...props} activeOpacity={0.7} />,
           tabBarStyle: [styles.tabBar, { height: Platform.OS === "ios" ? 100 : 80 }],
         }}
       >
-        <Tab.Screen
-          name="Home"
-          component={MapHomeScreen}  // ← show your Map as the Home tab
-          options={{
-            tabBarIcon: ({ focused }) => (
-              <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
-                {focused ? <HouseActive width={24} height={24} /> : <HouseInactive width={24} height={24} />}
-              </View>
-            ),
-          }}
-        />
-
         <Tab.Screen
           name="Search"
           component={NearbyPlaces}
@@ -91,7 +81,17 @@ function Tabs(){
             ),
           }}
         />
-
+        <Tab.Screen
+          name="Home"
+          component={MapHomeScreen}  // ← show your Map as the Home tab
+          options={{
+            tabBarIcon: ({ focused }) => (
+              <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
+                {focused ? <HouseActive width={24} height={24} /> : <HouseInactive width={24} height={24} />}
+              </View>
+            ),
+          }}
+        />
         <Tab.Screen
           name="Agent"
           component={NewsScraper}
