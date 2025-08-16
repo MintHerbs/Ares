@@ -480,12 +480,15 @@ export default function MapWeb({
         return;
       }
     } catch {}
-  }, [onMarkersChange, buildGoogleMapsUrl, onRequestRemoveSavedSpot]);
+  }, [onMarkersChange, buildGoogleMapsUrl, onRequestRemoveSavedSpot, savedSpots]);
 
   // Push saved spots down to the WebView whenever they change
   useEffect(() => {
     if (!webRef.current) return;
-    webRef.current.postMessage(JSON.stringify({ type: 'savedSpots:update', data: savedSpots }));
+    const t = setTimeout(() => {
+      webRef.current.postMessage(JSON.stringify({ type: 'savedSpots:update', data: savedSpots }));
+    }, 0);
+    return () => clearTimeout(t);
   }, [savedSpots]);
 
   return (
