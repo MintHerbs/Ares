@@ -42,6 +42,28 @@ export default function ImageReader() {
         alert("good shit");
     }
 
+    const sendToBackend = async (localUri) => {
+        const form = new FormData();
+        form.append('image', {
+          uri: localUri,
+          name: 'capture.jpg',
+          type: 'image/jpeg',
+        });
+      
+        const r = await fetch('https://real-time-alert.onrender.com/translate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'multipart/form-data' },
+          body: form,
+        });
+      
+        const data = await r.json();
+        if (data.translation) {
+          alert(data.translation);
+        } else {
+          alert('No translation found.');
+        }
+      };
+
     return (
         <View style={[styles.screen, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 0 }]}>
             <View style={styles.header}>
@@ -64,7 +86,7 @@ export default function ImageReader() {
                     <View style={{ marginTop: 12 }}>
                         <Image source={{ uri: photo.uri }} style={styles.preview} resizeMode="cover" />
                         <Text style={styles.caption}>Nice shot ✅ (uri: {photo.uri.slice(0, 40)}...)</Text>
-                        <Pressable onPress={translate_picture} style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}>
+                        <Pressable onPress={() => photo && sendToBackend(photo.uri)} style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}>
                             <Text style={styles.btnTxt}>Translate Picture</Text>
                         </Pressable>
                     </View>
