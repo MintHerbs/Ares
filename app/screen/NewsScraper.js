@@ -7,7 +7,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { supabase } from '../lib/supabase';
 
 async function fetchDbLinks() {
-  const { data, error } = await supabase.from('News').select('url');
+  const { data, error } = await supabase.from('News').select('url').order('created_at', {ascending: false});
   if (error) throw error;
   return (data ?? []).map(r => r.url).filter(Boolean);
 }
@@ -83,7 +83,7 @@ export default function NewsScraper({ route }) {
           data={links}
           keyExtractor={(item, i) => item + i}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => openLink(item)}>
+            <TouchableOpacity onPress={() => openLink('https://lexpress.mu' + item)}>
               <Text style={{ marginVertical: 8, textDecorationLine: 'underline', color: 'blue' }}>
                 {String('https://lexpress.mu' + item)}
               </Text>
