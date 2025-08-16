@@ -278,12 +278,28 @@ export default function NearbyPlaces() {
               style={styles.itineraryButton}
               onPress={async () => {
                 try {
-                  // you already have: const [lon, lat] = item.geometry?.coordinates || [];
-                  await addSpot({ name: props.name, lat, lng: lon });
-                  Alert.alert('Added!', `${props.name} saved to itinerary.`);
+                  // Geoapify coordinates are [lon, lat]
+                  const coords = item.geometry?.coordinates || [];
+                  const [lon, lat] = coords;
+
+                  // pick a stable id (prefer Geoapify's place_id if present)
+                  const id =
+                    (item.properties && item.properties.place_id) ||
+                    item.id ||
+                    `${lat},${lon}`;
+
+                  await addSpot({
+                    id: String(id),
+                    name: item.properties?.name || 'Unnamed',
+                    lat,                 // latitude
+                    lng: lon,            // longitude (note: "lng" not "lon")
+                    type: categoryToType(category),
+                  });
+
+                  Alert.alert('Added!', `${item.properties?.name} saved to itinerary.`);
                 } catch (e) {
-                  Alert.alert('Error', 'Could not save this spot.');
                   console.error(e);
+                  Alert.alert('Error', 'Could not save this spot.');
                 }
               }}
               activeOpacity={0.8}

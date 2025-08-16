@@ -41,6 +41,8 @@ function Tabs(){
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
+          detachInactiveScreens: false,  // ← keep views attached
+          lazy: false,                   // ← mount all tabs once          
           tabBarButton: (props) => <TouchableOpacity {...props} activeOpacity={0.7} />,
           tabBarStyle: [styles.tabBar, { height: Platform.OS === "ios" ? 100 : 80 }],
         }}

@@ -21,6 +21,7 @@ export default function MapHomeScreen() {
   // ← NEW: load & memoized refresh
   const refreshSaved = useCallback(async () => {
     const list = await getSpots();
+    console.log('refreshSaved ->', list.length);
     setSavedSpots(list);
   }, []);
 
@@ -46,7 +47,13 @@ export default function MapHomeScreen() {
       return unsubscribe;
     }, [refreshSaved])
   );
-
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     refreshSaved();
+  //     const unsubscribe = subscribe(refreshSaved);
+  //     return unsubscribe;
+  //   }, [refreshSaved])
+  // );
   // ← NEW: handler for remove requests coming from the WebView
   const handleRemoveSavedSpot = useCallback(async (id) => {
     await removeSpot(id);
