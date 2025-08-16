@@ -1,13 +1,9 @@
 // app/navigation/AppNavigator.js 
-import React from "react";
-import {
-  StyleSheet,
-  Platform,
-  SafeAreaView,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useEffect } from "react";
+import { StyleSheet, Platform, SafeAreaView, TouchableOpacity, View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import * as Notifications from 'expo-notifications';
 
 // SVG icons
 import HouseActive from "../assets/icons/House_active.svg";
@@ -24,16 +20,18 @@ import PersonInactive from "../assets/icons/Person_inactive.svg";
 import MapHomeScreen from "../screen/MapHomeScreen"; // ← NEW
 import ImageReader from "../screen/ImageReader";
 import NearbyPlaces from "../screen/journey";
+import NewsScraper from "../screen/NewsScraper";
+
+import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-// simple placeholders for the other tabs
-// function SearchScreen() { return <View style={styles.stub} />; }
 function AgentScreen() { return <View style={styles.stub} />; }
 function ChatScreen() { return <View style={styles.stub} />; }
 function AccountScreen() { return <View style={styles.stub} />; }
 
-export default function AppNavigator() {
+function Tabs(){
   return (
     <SafeAreaView style={styles.screen}>
       <Tab.Navigator
@@ -59,7 +57,7 @@ export default function AppNavigator() {
 
         <Tab.Screen
           name="Search"
-          component={NearbyPlaces} 
+          component={NearbyPlaces}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
@@ -71,7 +69,7 @@ export default function AppNavigator() {
 
         <Tab.Screen
           name="Agent"
-          component={AgentScreen}
+          component={NewsScraper}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
@@ -108,6 +106,19 @@ export default function AppNavigator() {
     </SafeAreaView>
   );
 }
+
+export default function AppNavigator() {
+  useNotificationNavigation();
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Tabs" component={Tabs} />
+        <Stack.Screen name="NewsScraper" component={NewsScraper} />
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+}
+
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
