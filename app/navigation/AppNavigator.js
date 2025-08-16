@@ -22,6 +22,7 @@ import PersonActive from "../assets/icons/Person_Active.svg";
 import PersonInactive from "../assets/icons/Person_inactive.svg";
 
 import MapHomeScreen from "../screen/MapHomeScreen"; // ← NEW
+import ImageReader from "../screen/ImageReader";
 
 const Tab = createBottomTabNavigator();
 
@@ -81,7 +82,7 @@ export default function AppNavigator() {
 
         <Tab.Screen
           name="Chat"
-          component={ChatScreen}
+          component={ImageReader}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
