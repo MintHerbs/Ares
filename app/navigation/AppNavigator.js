@@ -21,8 +21,10 @@ import MapHomeScreen from "../screen/MapHomeScreen"; // ← NEW
 import ImageReader from "../screen/ImageReader";
 import NearbyPlaces from "../screen/journey";
 import NewsScraper from "../screen/NewsScraper";
+import DraggableFab from "../components/DraggableFab";
 
-import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
+// import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
+import CurrencyConvertor from "../screen/CurrencyConvertor";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -106,14 +108,18 @@ function Tabs(){
 }
 
 export default function AppNavigator() {
-  useNotificationNavigation();
+  // useNotificationNavigation();
+  
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} pointerEvents="box-none">
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={Tabs} />
         <Stack.Screen name="NewsScraper" component={NewsScraper} />
+        <Stack.Screen name="CurrencyConvertor" component={CurrencyConvertor} />
       </Stack.Navigator>
-    </SafeAreaView>
+      <DraggableFab bottomOffset={200} rightOffset={16} />
+    </View>
   );
 }
 

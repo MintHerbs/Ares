@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-  TouchableOpacity,
-} from "react-native";
+import { View,Text,TextInput,StyleSheet,Image,ActivityIndicator,TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 

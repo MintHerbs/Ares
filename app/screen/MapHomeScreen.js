@@ -53,18 +53,18 @@ export default function MapHomeScreen() {
     await refreshSaved();
   }, [refreshSaved]);
 
-  useEffect(() => {
-    (async () => {
-      const token = await registerForPushToken();
-      if (token) {
-        await fetch('https://real-time-alert.onrender.com/register-device', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token, userId: '123' }),
-        });
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const token = await registerForPushToken();
+  //     if (token) {
+  //       await fetch('https://real-time-alert.onrender.com/register-device', {
+  //         method: 'POST',
+  //         headers: { 'Content-Type': 'application/json' },
+  //         body: JSON.stringify({ token, userId: '123' }),
+  //       });
+  //     }
+  //   })();
+  // }, []);
 
   return (
     <View
