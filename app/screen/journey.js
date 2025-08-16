@@ -1,4 +1,3 @@
-// app/screens/journey.js
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -15,6 +14,7 @@ import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 
 const GEOAPIFY_API_KEY = "0aac63c6c95743b387bed05ed1f9a538";
+const OPENAI_API_KEY ="sk-...CukA";
 
 export default function NearbyPlaces() {
   const [places, setPlaces] = useState([]);
@@ -28,6 +28,40 @@ export default function NearbyPlaces() {
   useEffect(() => {
     fetchLocationAndPlaces();
   }, [category]);
+
+  
+  const getPlaceDescription = async (placeName) => {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a travel guide giving concise tourist descriptions." },
+          { role: "user", content: `Write a short, 2-sentence tourist description of "${placeName}".` }
+        ],
+        max_tokens: 60,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("GPT Response:", JSON.stringify(data, null, 2)); // 🔍 debug
+
+    if (data.error) {
+      console.error("OpenAI API error:", data.error.message);
+      return "Description unavailable.";
+    }
+
+    return data.choices?.[0]?.message?.content?.trim() || "Description unavailable.";
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return "Description unavailable.";
+  }
+};
 
   const fetchLocationAndPlaces = async () => {
     setLoading(true);
@@ -61,15 +95,30 @@ export default function NearbyPlaces() {
         setLocationName("your location");
       }
 
-      const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${longitude},${latitude},${radius}&bias=proximity:${longitude},${latitude}&limit=30&apiKey=${GEOAPIFY_API_KEY}`;
-
+      
+      const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${longitude},${latitude},${radius}&bias=proximity:${longitude},${latitude}&limit=2&apiKey=${GEOAPIFY_API_KEY}`;
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.features && data.features.length > 0) {
-        const filteredPlaces = data.features.filter(
-          (place) => place.properties.name && place.properties.name.trim() !== ""
+        let filteredPlaces = data.features.filter(
+          (place) =>
+            place.properties.name && place.properties.name.trim() !== ""
         );
+
+        
+        if (["tourism", "entertainment"].includes(category)) {
+          filteredPlaces = await Promise.all(
+            filteredPlaces.map(async (place) => {
+              const desc = await getPlaceDescription(place.properties.name);
+              return {
+                ...place,
+                properties: { ...place.properties, gptDescription: desc },
+              };
+            })
+          );
+        }
+
         setPlaces(filteredPlaces);
       } else {
         setPlaces([]);
@@ -96,16 +145,14 @@ export default function NearbyPlaces() {
     );
   };
 
- 
   const isOpenNow = (opening_hours) => {
     if (!opening_hours) return null;
 
     try {
       const now = new Date();
-      const day = now.toLocaleString("en-US", { weekday: "short" }); 
+      const day = now.toLocaleString("en-US", { weekday: "short" });
       const timeMinutes = now.getHours() * 60 + now.getMinutes();
 
-      
       const segments = opening_hours.split(";").map((seg) => seg.trim());
 
       for (const segment of segments) {
@@ -137,9 +184,9 @@ export default function NearbyPlaces() {
           const endMinutes = eh * 60 + em;
 
           if (timeMinutes >= startMinutes && timeMinutes <= endMinutes) {
-            return true; 
+            return true;
           } else {
-            return false; 
+            return false;
           }
         }
       }
@@ -171,8 +218,6 @@ export default function NearbyPlaces() {
 
         <View style={styles.card}>
           <View style={styles.cardContent}>
-
-            
             {props.thumbnail && (
               <Image
                 source={{ uri: props.thumbnail }}
@@ -183,9 +228,14 @@ export default function NearbyPlaces() {
 
             <Text style={styles.cardTitle}>{props.name}</Text>
 
+            {props.gptDescription && (
+              <Text style={{ fontSize: 14, color: "#555", marginBottom: 8 }}>
+                {props.gptDescription}
+              </Text>
+            )}
+
             <Text style={styles.distance}>{formatDistance(props.distance)}</Text>
 
-           
             {props.opening_hours && (
               <>
                 <TouchableOpacity
@@ -215,17 +265,20 @@ export default function NearbyPlaces() {
                       ? "Closed Now"
                       : "Hours Available"}
                   </Text>
-                  <Text style={styles.expandToggle}>{isExpanded ? "▲" : "▼"}</Text>
+                  <Text style={styles.expandToggle}>
+                    {isExpanded ? "▲" : "▼"}
+                  </Text>
                 </TouchableOpacity>
                 {isExpanded && (
                   <View style={styles.openingHoursBox}>
-                    <Text style={styles.openingHoursText}>{props.opening_hours}</Text>
+                    <Text style={styles.openingHoursText}>
+                      {props.opening_hours}
+                    </Text>
                   </View>
                 )}
               </>
             )}
 
-            
             {props.website && (
               <TouchableOpacity
                 onPress={() => Linking.openURL(props.website)}
@@ -236,7 +289,6 @@ export default function NearbyPlaces() {
               </TouchableOpacity>
             )}
 
-            
             {props.wikipedia && (
               <TouchableOpacity
                 onPress={() => Linking.openURL(props.wikipedia)}
