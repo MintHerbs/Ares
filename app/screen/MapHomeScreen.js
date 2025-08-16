@@ -24,8 +24,21 @@ export default function MapHomeScreen() {
     setSavedSpots(list);
   }, []);
 
+ // 1) Keep a live subscription while this screen is mounted
+  useEffect(() => {
+    let mounted = true;
+    const sync = async () => {
+      const list = await getSpots();
+      if (mounted) setSavedSpots(list);
+    };
+    // initial load
+    sync();
+    // subscribe to changes triggered by addSpot/removeSpot anywhere in the app
+    const unsubscribe = subscribe(sync);
+    return () => { mounted = false; unsubscribe(); };
+  }, []);  
   // ← NEW: refresh whenever this tab/screen gains focus,
-  // and live-update via the storage subscription
+  // and live-update via the storage subscription....// 2) Still refresh whenever the tab regains focus (nice safety net)
   useFocusEffect(
     useCallback(() => {
       refreshSaved();
