@@ -21,8 +21,10 @@ import MapHomeScreen from "../screen/MapHomeScreen"; // ← NEW
 import ImageReader from "../screen/ImageReader";
 import NearbyPlaces from "../screen/journey";
 import NewsScraper from "../screen/NewsScraper";
-
+import ProfileScreen from "../screen/ProfileScreen"
 import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
+import EditRestrictions from "../screen/EditRestrictions";
+import LoginScreen from "../screen/LoginScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -30,6 +32,22 @@ const Stack = createNativeStackNavigator();
 function AgentScreen() { return <View style={styles.stub} />; }
 function ChatScreen() { return <View style={styles.stub} />; }
 function AccountScreen() { return <View style={styles.stub} />; }
+
+function Auth(){
+  return(
+  <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Main App" component={Tabs} />
+        
+        
+        
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+}
+
+
 
 function Tabs(){
   return (
@@ -93,7 +111,7 @@ function Tabs(){
 
         <Tab.Screen
           name="Account"
-          component={AccountScreen}
+          component={SettingsNavigator}
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
@@ -107,13 +125,28 @@ function Tabs(){
   );
 }
 
+function SettingsNavigator() {
+
+
+  return (
+     <SafeAreaView style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
+        <Stack.Screen name="Edit Restrictions" component={EditRestrictions} />
+        
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+}
+
 export default function AppNavigator() {
   useNotificationNavigation();
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Tabs" component={Tabs} />
-        <Stack.Screen name="NewsScraper" component={NewsScraper} />
+        <Stack.Screen name="Auth" component={Auth} />
+        {/* <Stack.Screen name="NewsScraper" component={NewsScraper} /> */}
       </Stack.Navigator>
     </SafeAreaView>
   );
