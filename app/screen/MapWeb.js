@@ -1,34 +1,30 @@
-import React, { useMemo, useRef, useCallback } from 'react';
-import { StyleSheet, Linking, Platform, Alert } from 'react-native'; // NEW
+// app/screen/MapWeb.js
+import React, { useMemo, useRef, useCallback, useEffect } from 'react';
+import { StyleSheet, Linking, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 export default function MapWeb({
   initialCenter = { lat: -20.1609, lng: 57.5012, zoom: 12 },
   onMarkersChange,
+  savedSpots = [],                 // ← comes from RN (AsyncStorage-backed)
+  onRequestRemoveSavedSpot,        // ← RN callback to delete a saved spot
 }) {
   const webRef = useRef(null);
 
-  // NEW: helper to build a Google Maps multi-stop URL
   const buildGoogleMapsUrl = useCallback((markers, mode = 'driving') => {
     if (!markers || markers.length === 0) return null;
-
-    // Use the order of markers as given; last one is the final destination.
     const pts = markers.map(m => `${m.lat},${m.lng}`);
     const destination = pts[pts.length - 1];
-
-    // Google Maps supports many waypoints but mobile UI can be picky.
-    const MAX_WAYPOINTS = 8; // keep it conservative (destination is separate)
-    const waypoints = pts.slice(0, pts.length - 1).slice(0, MAX_WAYPOINTS);
-
+    const MAX_WAYPOINTS = 8;
+    const waypoints = pts.slice(0, -1).slice(0, MAX_WAYPOINTS);
     const enc = encodeURIComponent;
-    const url =
+    return (
       `https://www.google.com/maps/dir/?api=1` +
       `&origin=${enc('Current Location')}` +
       `&destination=${enc(destination)}` +
       (waypoints.length ? `&waypoints=${enc(waypoints.join('|'))}` : '') +
-      `&travelmode=${enc(mode)}`;
-
-    return url;
+      `&travelmode=${enc(mode)}`
+    );
   }, []);
 
   const html = useMemo(() => `<!DOCTYPE html>
@@ -108,6 +104,28 @@ export default function MapWeb({
     transform: translate(-20px, -20px);
   }
   .emoji-marker span { font-size: 22px; line-height: 1; }
+
+  /* SAVED: collapsible left panel under Journal */
+  .saved-toggle {
+    top: 110px; left: 10px; padding: 8px 10px; background: #fff; border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2); font-size: 14px;
+  }
+  .saved {
+    top: 110px; bottom: 80px; left: 10px; width: 260px; background: #fff;
+    border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.25); border: 1px solid #ddd;
+    overflow: hidden; transform: translateX(-110%); transition: transform .2s ease;
+  }
+  .saved.open { transform: translateX(0); }
+  .saved header {
+    padding: 10px 12px; font-weight: 600; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #eee;
+  }
+  .saved .section { padding: 10px 12px; }
+  .saved .list { max-height: 50vh; overflow: auto; padding: 0 12px 12px; }
+  .saved .entry { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .saved .entry:last-child { border-bottom: 0; }
+  .saved .meta { font-size: 12px; color: #666; }
+  .saved .actions { display: flex; gap: 6px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -156,6 +174,18 @@ export default function MapWeb({
   <div class="section">
     <div style="font-weight:600; margin-bottom:6px;">Saved dates</div>
     <div id="entries" class="list"></div>
+  </div>
+</div>
+
+<!-- SAVED: toggle + panel -->
+<div class="ui saved-toggle" id="savedToggle">⭐ Saved</div>
+<div class="ui saved" id="saved">
+  <header>
+    <span>Saved spots</span>
+    <button id="savedClose">✕</button>
+  </header>
+  <div class="section">
+    <div id="savedList" class="list"></div>
   </div>
 </div>
 
@@ -218,7 +248,11 @@ export default function MapWeb({
   const form = document.getElementById('searchForm');
   const input = document.getElementById('searchInput');
   const results = document.getElementById('searchResults');
-  function escHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":'&#39;'}[c])); }
+
+  function escHtml(s){
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const q = (input.value || '').trim();
@@ -247,7 +281,6 @@ export default function MapWeb({
   });
 
   /* ===== JOURNAL ===== */
-
   const storage = (() => {
     try { const k='__probe__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return localStorage; }
     catch (e) { const mem={}; return { getItem:k=>mem[k]??null, setItem:(k,v)=>mem[k]=String(v), removeItem:k=>{delete mem[k];} }; }
@@ -285,7 +318,7 @@ export default function MapWeb({
           +   '<div><strong>'+date+'</strong> <span class="meta">('+count+' markers)</span></div>'
           +   '<div class="actions">'
           +     '<button data-action="load">Load</button>'
-          +     '<button data-action="start">Start</button>' /* NEW: start route */
+          +     '<button data-action="start">Start</button>'
           +     '<button data-action="delete">Delete</button>'
           +   '</div>'
           + '</div>';
@@ -310,7 +343,7 @@ export default function MapWeb({
     if (action === 'load'){
       const markers = loadEntry(dateStr) || [];
       clearMarkers(); markers.forEach(p => addMarker(p.lat, p.lng, p.type || 'pin')); fitMarkers();
-    } else if (action === 'start'){ /* NEW: ask RN to start directions */
+    } else if (action === 'start'){
       const markers = loadEntry(dateStr) || [];
       if (markers.length === 0) { alert('No markers saved for this day'); return; }
       if (window.ReactNativeWebView) {
@@ -323,6 +356,58 @@ export default function MapWeb({
 
   renderEntries();
 
+  /* ===== SAVED PANEL (from RN) ===== */
+  const saved = document.getElementById('saved');
+  const savedToggle = document.getElementById('savedToggle');
+  const savedClose  = document.getElementById('savedClose');
+  const savedListEl = document.getElementById('savedList');
+  let savedSpotsState = []; // array of {id, name, lat, lng, [type]}
+
+  function renderSaved(){
+    if (!Array.isArray(savedSpotsState) || savedSpotsState.length === 0) {
+      savedListEl.innerHTML = '<div class="nores">No saved spots yet</div>';
+      return;
+    }
+    savedListEl.innerHTML = savedSpotsState.map((s) => {
+      const lat = s.lat ?? s.latitude ?? s.latLng?.lat ?? s.coords?.lat;
+      const lng = s.lng ?? s.lon ?? s.longitude ?? s.latLng?.lng ?? s.coords?.lng;
+      const safeName = escHtml(s.name || s.title || 'Unnamed');
+      return '<div class="entry" data-id="'+escHtml(String(s.id))+'" data-lat="'+lat+'" data-lng="'+lng+'">'
+           +   '<div><strong>'+safeName+'</strong>'
+           +   ' <span class="meta">('+lat.toFixed(5)+', '+lng.toFixed(5)+')</span></div>'
+           +   '<div class="actions">'
+           +     '<button data-action="add">Add to map</button>'
+           +     '<button data-action="go">Go</button>'
+           +     '<button data-action="remove">Remove</button>'
+           +   '</div>'
+           + '</div>';
+    }).join('');
+  }
+
+  savedToggle.addEventListener('click', () => saved.classList.add('open'));
+  savedClose.addEventListener('click', () => saved.classList.remove('open'));
+
+  savedListEl.addEventListener('click', (e) => {
+    const entry = e.target.closest('.entry'); if (!entry) return;
+    const id = entry.dataset.id;
+    const lat = parseFloat(entry.dataset.lat);
+    const lng = parseFloat(entry.dataset.lng);
+    const action = e.target.getAttribute('data-action');
+
+    if (action === 'add'){
+      addMarker(lat, lng, 'pin');
+      map.flyTo([lat, lng], 14);
+    } else if (action === 'go'){
+      map.flyTo([lat, lng], 14);
+    } else if (action === 'remove'){
+      // ask RN to remove from saved list
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type:'savedSpots:remove', id }));
+      }
+    }
+  });
+
+  // RN bridge
   function handleRnMessage(msg){
     try{
       const { type, data } = JSON.parse(msg);
@@ -332,15 +417,34 @@ export default function MapWeb({
       else if (type === 'loadMarkers' && Array.isArray(data)){
         clearMarkers(); data.forEach(p => addMarker(p.lat, p.lng, p.type || 'pin'));
       }
+      /* RN bridge: savedSpots */
+      else if (type === 'savedSpots:update'){
+        // normalize into {id, name, lat, lng, type?}
+        savedSpotsState = Array.isArray(data) ? data.map(s => {
+          const lat = s.lat ?? s.latitude ?? (s.coords && s.coords.lat) ?? (s.latLng && s.latLng.lat) ?? s.y ?? 0;
+          const lng = s.lng ?? s.lon ?? s.longitude ?? (s.coords && s.coords.lng) ?? (s.latLng && s.latLng.lng) ?? s.x ?? 0;
+          return {
+            id: s.id != null ? String(s.id) : (s.name || \`\${lat},\${lng}\`),
+            name: s.name || s.title || 'Unnamed',
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+            type: s.type || 'pin'
+          };
+        }) : [];
+        renderSaved();
+      }
     }catch(e){ console.error('Bad RN message', e); }
   }
   document.addEventListener('message', ev => handleRnMessage(ev.data));
   window.addEventListener('message', ev => handleRnMessage(ev.data));
+  if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'webviewReady' }));
+  }  
 </script>
 </body>
 </html>`, [initialCenter]);
 
-  // React side: handle both marker updates and "startDirections"
+  // Handle messages coming out of the WebView
   const onMessage = useCallback((event) => {
     try {
       const payload = JSON.parse(event.nativeEvent.data);
@@ -350,7 +454,20 @@ export default function MapWeb({
         return;
       }
 
-      if (payload?.type === 'startDirections') { // NEW
+      if (payload?.type === 'webviewReady') {
+        if (webRef.current) {
+          webRef.current.postMessage(JSON.stringify({ type: 'savedSpots:update', data: savedSpots }));
+        }
+        return;
+      }
+
+      // from WebView: user clicked "remove" in Saved panel
+      if (payload?.type === 'savedSpots:remove' && payload.id && onRequestRemoveSavedSpot) {
+        onRequestRemoveSavedSpot(payload.id);
+        return;
+      }
+
+      if (payload?.type === 'startDirections') {
         const markers = (payload.data && payload.data.markers) || [];
         const url = buildGoogleMapsUrl(markers, 'driving');
         if (!url) {
@@ -363,12 +480,13 @@ export default function MapWeb({
         return;
       }
     } catch {}
-  }, [onMarkersChange, buildGoogleMapsUrl]);
+  }, [onMarkersChange, buildGoogleMapsUrl, onRequestRemoveSavedSpot]);
 
-  const send = useCallback((obj) => {
+  // Push saved spots down to the WebView whenever they change
+  useEffect(() => {
     if (!webRef.current) return;
-    webRef.current.postMessage(JSON.stringify(obj));
-  }, []);
+    webRef.current.postMessage(JSON.stringify({ type: 'savedSpots:update', data: savedSpots }));
+  }, [savedSpots]);
 
   return (
     <WebView
@@ -381,6 +499,11 @@ export default function MapWeb({
       geolocationEnabled
       allowsInlineMediaPlayback
       style={styles.fill}
+      onLoad={() => {
+        if (webRef.current) {
+          webRef.current.postMessage(JSON.stringify({ type: 'savedSpots:update', data: savedSpots }));
+        }
+      }}      
     />
   );
 }

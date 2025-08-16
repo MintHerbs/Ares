@@ -12,9 +12,20 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
+import { addSpot } from "../storage/savedSpots";
 
 const GEOAPIFY_API_KEY = "0aac63c6c95743b387bed05ed1f9a538";
 const OPENAI_API_KEY = "sk-...CukA";
+
+const categoryToType = (cat) => {
+  if (!cat) return "pin";
+  if (cat.includes("restaurant") || cat.includes("catering")) return "restaurant";
+  if (cat.includes("fast_food")) return "restaurant";
+  if (cat.includes("accommodation")) return "home";
+  if (cat.includes("tourism") || cat.includes("entertainment")) return "entertainment";
+  if (cat.includes("commercial.supermarket")) return "shopping";
+  return "pin";
+};
 
 export default function NearbyPlaces() {
   const [places, setPlaces] = useState([]);
@@ -265,7 +276,16 @@ export default function NearbyPlaces() {
             {/* New Add to Itinerary button */}
             <TouchableOpacity
               style={styles.itineraryButton}
-              onPress={() => Alert.alert("Added!", `${props.name} added to itinerary.`)}
+              onPress={async () => {
+                try {
+                  // you already have: const [lon, lat] = item.geometry?.coordinates || [];
+                  await addSpot({ name: props.name, lat, lng: lon });
+                  Alert.alert('Added!', `${props.name} saved to itinerary.`);
+                } catch (e) {
+                  Alert.alert('Error', 'Could not save this spot.');
+                  console.error(e);
+                }
+              }}
               activeOpacity={0.8}
             >
               <Text style={styles.itineraryButtonText}>Add to Itinerary</Text>
@@ -278,7 +298,7 @@ export default function NearbyPlaces() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>THE JOURNEY</Text>
+      <Text style={styles.header}>Explore</Text>
       <Text style={styles.locationText}>You are currently at {locationName || "your location"}</Text>
       <Text style={styles.subHeader}>Nearby places near you are:</Text>
 
