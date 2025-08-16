@@ -85,7 +85,6 @@ export default function ImageReader() {
                 {photo && (
                     <View style={{ marginTop: 12 }}>
                         <Image source={{ uri: photo.uri }} style={styles.preview} resizeMode="cover" />
-                        <Text style={styles.caption}>Nice shot ✅ (uri: {photo.uri.slice(0, 40)}...)</Text>
                         <Pressable onPress={() => photo && sendToBackend(photo.uri)} style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}>
                             <Text style={styles.btnTxt}>Translate Picture</Text>
                         </Pressable>
