@@ -23,11 +23,12 @@ import PersonInactive from "../assets/icons/Person_inactive.svg";
 
 import MapHomeScreen from "../screen/MapHomeScreen"; // ← NEW
 import ImageReader from "../screen/ImageReader";
+import NearbyPlaces from "../screen/journey";
 
 const Tab = createBottomTabNavigator();
 
 // simple placeholders for the other tabs
-function SearchScreen() { return <View style={styles.stub} />; }
+// function SearchScreen() { return <View style={styles.stub} />; }
 function AgentScreen() { return <View style={styles.stub} />; }
 function ChatScreen() { return <View style={styles.stub} />; }
 function AccountScreen() { return <View style={styles.stub} />; }
@@ -58,7 +59,7 @@ export default function AppNavigator() {
 
         <Tab.Screen
           name="Search"
-          component={SearchScreen}
+          component={NearbyPlaces} 
           options={{
             tabBarIcon: ({ focused }) => (
               <View style={[styles.iconWrapper, focused && styles.iconWrapperActive]}>
