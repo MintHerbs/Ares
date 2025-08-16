@@ -93,7 +93,7 @@ export default function LoginScreen() {
         // navigation.navigate("Home");
         // or update some global auth state/context.
 
-        navigation.replace("MapHomeScreen"); 
+        navigation.replace("Main App"); 
       }
     } catch (err) {
       // Catch unexpected network or library errors that are not normal auth errors.
